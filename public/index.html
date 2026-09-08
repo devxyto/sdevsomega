@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SDEVS MESSENGER</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="authView" class="auth-wrap">
+  <div class="auth-card">
+    <div class="brand"><span class="brand-mark">S</span><div><b>SDEVS</b><small>MESSENGER</small></div></div>
+    <p class="muted">Private clan communication hub.</p>
+    <div class="tabs">
+      <button class="tab active" data-mode="login">Log in</button>
+      <button class="tab" data-mode="register">Create account</button>
+    </div>
+    <form id="authForm">
+      <label>Username<input id="authUser" required autocomplete="username" maxlength="24"></label>
+      <label>Password<input id="authPass" type="password" required autocomplete="current-password"></label>
+      <button class="primary" id="authSubmit">Enter SDEVS</button>
+      <div id="authError" class="error"></div>
+    </form>
+    <div class="owner-note">OWNER access is provisioned by the server.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="app hidden">
+  <aside class="sidebar">
+    <div class="side-head">
+      <div class="brand"><span class="brand-mark">S</span><div><b>SDEVS</b><small>MESSENGER</small></div></div>
+      <button id="logout" class="icon-btn">↪</button>
+    </div>
+    <div class="server-card">
+      <div class="server-icon">S</div>
+      <div><b>SDEVS CLAN</b><span id="clanTagline">Online community</span></div>
+    </div>
+    <div class="section-label">CHANNELS</div>
+    <button class="channel active"># general</button>
+    <button class="channel"># media</button>
+    <div id="ownerNav" class="hidden">
+      <div class="section-label">OWNER</div>
+      <button id="openAdmin" class="channel">♛ Owner dashboard</button>
+    </div>
+    <div class="section-label">ACCOUNT</div>
+    <button id="changeName" class="channel">✎ Change username</button>
+    <div class="profile">
+      <div class="avatar" id="avatar">S</div>
+      <div><b id="sideUser">User</b><span id="role">Member</span></div>
+    </div>
+  </aside>
+
+  <main class="chat">
+    <header class="chat-head">
+      <div><h2># general</h2><span>Clan chat · files up to <b id="limitLabel">500MB</b></span></div>
+      <div class="head-actions"><span class="live-dot"></span> Live</div>
+    </header>
+
+    <!-- STORY BAR -->
+    <div id="storyBar" class="story-bar">
+      <button id="addStory" class="story-add" title="Add story">
+        <span class="story-plus">+</span>
+        <span>Your story</span>
+      </button>
+      <div id="storyList" class="story-list"></div>
+    </div>
+
+    <div id="announcementBar" class="announcement hidden"></div>
+    <section id="messages" class="messages"></section>
+    <div id="uploadPreview" class="upload-preview hidden"></div>
+
+    <!-- GIPHY PANEL -->
+    <div id="gifPanel" class="gif-panel hidden">
+      <div class="gif-search-row">
+        <input id="gifSearch" placeholder="Search GIFs…" autocomplete="off">
+        <button id="gifClose" class="panel-close">×</button>
+      </div>
+      <div id="gifGrid" class="gif-grid"></div>
+    </div>
+
+    <!-- MUSIC PANEL -->
+    <div id="musicPanel" class="music-panel hidden">
+      <div class="gif-search-row">
+        <input id="musicSearch" placeholder="Search a song…" autocomplete="off">
+        <button id="musicClose" class="panel-close">×</button>
+      </div>
+      <div id="musicResults" class="music-results"></div>
+    </div>
+
+    <!-- EMOJI PICKER (full keyboard style) -->
+    <div id="emojiPicker" class="emoji-picker hidden">
+      <div class="ep-search-row">
+        <input id="emojiSearch" placeholder="Search emoji…" autocomplete="off">
+      </div>
+      <div class="ep-cats">
+        <button class="ep-cat active" data-cat="recent" title="Recent">🕐</button>
+        <button class="ep-cat" data-cat="smileys" title="Smileys">😀</button>
+        <button class="ep-cat" data-cat="people" title="People">👋</button>
+        <button class="ep-cat" data-cat="nature" title="Nature">🌿</button>
+        <button class="ep-cat" data-cat="food" title="Food">🍔</button>
+        <button class="ep-cat" data-cat="travel" title="Travel">✈️</button>
+        <button class="ep-cat" data-cat="activity" title="Activity">⚽</button>
+        <button class="ep-cat" data-cat="objects" title="Objects">💡</button>
+        <button class="ep-cat" data-cat="symbols" title="Symbols">❤️</button>
+        <button class="ep-cat" data-cat="flags" title="Flags">🏳️</button>
+      </div>
+      <div id="emojiGrid" class="ep-grid"></div>
+    </div>
+
+    <form id="composer" class="composer">
+      <input type="file" id="fileInput" hidden>
+      <button type="button" id="attach" class="round" title="Attach file">＋</button>
+      <button type="button" id="musicBtn" class="round" title="Add music">🎵</button>
+      <input id="messageInput" placeholder="Message SDEVS…" autocomplete="off" maxlength="4000">
+      <button type="button" id="emoji" class="round" title="Emoji">😊</button>
+      <button type="button" id="gif" class="gif-btn" title="GIF">GIF</button>
+      <button class="send">➤</button>
+    </form>
+  </main>
+</div>
+
+<!-- CHANGE NAME MODAL -->
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <button id="closeModal" class="close">×</button>
+    <h3>Change username</h3>
+    <p class="muted">Choose a new clan name.</p>
+    <input id="newName" maxlength="24">
+    <button id="saveName" class="primary">Save username</button>
+    <div id="nameError" class="error"></div>
+  </div>
+</div>
+
+<!-- STORY VIEWER -->
+<div id="storyViewer" class="story-viewer hidden">
+  <button id="storyViewClose" class="sv-close">×</button>
+  <div id="storyViewContent" class="sv-content"></div>
+  <div id="storyProgress" class="sv-progress"></div>
+</div>
+
+<!-- STORY CREATOR -->
+<div id="storyCreator" class="modal hidden">
+  <div class="modal-card story-creator-card">
+    <button id="closeStoryCreator" class="close">×</button>
+    <h3>📸 Add to your story</h3>
+    <div class="story-type-tabs">
+      <button class="story-type active" data-type="text">✏️ Text</button>
+      <button class="story-type" data-type="image">🖼 Image</button>
+    </div>
+    <div id="storyTextInput" class="story-input-area">
+      <textarea id="storyText" placeholder="What's on your mind…" maxlength="280"></textarea>
+      <div class="story-bg-picker">
+        <span>Background:</span>
+        <button class="bg-opt active" data-bg="#182532" style="background:#182532"></button>
+        <button class="bg-opt" data-bg="#1a1a2e" style="background:#1a1a2e"></button>
+        <button class="bg-opt" data-bg="#1e3a3a" style="background:#1e3a3a"></button>
+        <button class="bg-opt" data-bg="#2a1a1a" style="background:#2a1a1a"></button>
+        <button class="bg-opt" data-bg="#1a2a1a" style="background:#1a2a1a"></button>
+      </div>
+    </div>
+    <div id="storyImageInput" class="story-input-area hidden">
+      <input type="file" id="storyFileInput" accept="image/*" hidden>
+      <div id="storyImagePreview" class="story-img-preview" onclick="document.getElementById('storyFileInput').click()">
+        <span>Click to choose image</span>
+      </div>
+    </div>
+    <button id="postStory" class="primary">Post story</button>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div id="adminModal" class="modal hidden">
+  <div class="modal-card admin-card">
+    <button id="closeAdmin" class="close">×</button>
+    <div class="admin-title">
+      <div><span class="eyebrow">SDEVS CONTROL</span><h2>Owner dashboard</h2></div>
+      <span class="owner-badge">OWNER</span>
+    </div>
+    <div id="adminStats" class="stats"></div>
+    <div class="admin-grid">
+      <section>
+        <h3>Members</h3>
+        <div id="userList" class="user-list"></div>
+      </section>
+      <section>
+        <h3>Clan settings</h3>
+        <label>Clan name<input id="setClanName" maxlength="100"></label>
+        <label>Tagline<input id="setTagline" maxlength="100"></label>
+        <button id="saveSettings" class="primary">Save settings</button>
+        <h3 class="mt">Announcement</h3>
+        <textarea id="announceText" maxlength="500" placeholder="Post an announcement…"></textarea>
+        <button id="postAnnouncement" class="primary">Publish announcement</button>
+        <div id="announcementList" class="announcement-list"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="/script.js"></script>
+</body>
+</html>
